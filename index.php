@@ -23,25 +23,26 @@ require_once dirname(__FILE__) . '/Cache.php';
 
   $cache = new Cache();
   $html = $cache->get('html');
+  if ($html != false) {
+    $css_url = $cache->get_css('html');
+  }
   if (!empty($_POST["url"])) {
       $url = $_POST["url"];
       // HTMLソース取得
       $html = mb_convert_encoding(@file_get_contents($url),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
       $html = preg_replace('/<\s*meta\s+charset\s*=\s*["\'](.+)["\']\s*\/?\s*>/i', '<meta charset="${1}"><meta http-equiv="Content-Type" content="text/html; charset=${1}">', $html);
       // CSSのソースを取得し、外部で取ってくるように置き換える
-      @$doc = new DOMDocument();
-      @$doc->loadHTML($html);
-      $xml = simplexml_import_dom($doc);
+      $doc = new DOMDocument();
+      $doc->loadHTML(@$html);
+      $xml = simplexml_import_dom(@$doc);
       $results = $xml->xpath('//*[@rel="stylesheet" or @media="all" or @media="screen"]');    
       foreach($results as $line) {
           if ($line->xpath('@href') != false) {
               if(preg_match('/^(http|https):/i', $line['href'])) {
                 $css_url[] = mb_convert_encoding(@file_get_contents($line['href']),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
-                $css_name[] = $line['href'];
               } else {
                 $html = str_replace($line['href'], $url . $line['href'], $html);
                 $css_url[] = mb_convert_encoding(@file_get_contents( $url . $line['href']),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
-                $css_name[] = $line['href'];
              }
           }
       }
@@ -65,7 +66,7 @@ require_once dirname(__FILE__) . '/Cache.php';
       }
     // サイト情報を保存する
     if (!empty($_POST["save"])) {
-        $cache->put('html', $html);
+        $cache->put('html', htmlspecialchars_decode($html));
     }
     /******************/
   }
