@@ -1,25 +1,77 @@
 <?php
+require "simple_html_dom.php";
 require_once dirname(__FILE__) . '/config.php';
 require_once dirname(__FILE__) . '/Cache.php';
-       //配列を再帰的に置換処理
-       function arrayReplace($results, $before = '', $after = '') {
-           $resultArr = $results;
-           foreach ($results[0]->attributes() as $key => $value) {
-               if (is_array($value)) {
-                   $value = arrayReplace($value, $before, $after);
-                } else {
-                    switch (true) {
-                        case preg_match("/^(http|https):/i", $before):
-                            break;
-                        case preg_match("/^\/[^\/].+/", $before):
-                            $value = str_replace($before, $after . $before, $value);
-                            break;
-                    }
-                }
-                $resultArr["$key"] = $value;
+
+function img_array_flatten($array) {
+    foreach($array->find('img') as $values) {
+        if(is_array($values)) {
+            img_array_flatten($values);
+        } else {
+            $a[] = $values;
+        }
+    }
+    return $a;
+}
+
+function css_array_flatten($array) {
+    foreach($array->find('link[rel="stylesheet"],link[media="all"],link[media="screen"]') as $values) {
+        if(is_array($values)) {
+            css_array_flatten($values);
+        } else {
+            $a[] = $values;
+        }
+    }
+    return $a;
+}
+//画像配列を再帰的に置換処理
+function img_array_replace($search, $array) {
+    foreach ($array->find('img') as $value) {
+        if (is_array($value)) {
+            $value = img_array_replace($search, $array);
+        } else {
+            if (preg_match("/^(http|https):/i", $value->src)) {
+            } else if (preg_match("/^\/[^\/].+/", $value->src)) {
+                $value = str_replace($value->src, $search . $value->src, $value);
             }
-            return $resultArr;
-       }
+        }
+        $resultAtr[] = $value;
+    }
+    return $resultAtr;
+}
+
+//CSS配列を再帰的に置換処理
+function css_array_replace($search, $array) {
+    foreach ($array->find('link[rel="stylesheet"],link[media="all"],link[media="screen"]') as $value) {
+        if (is_array($value)) {
+            $value = css_array_replace($search, $array);
+        } else {
+            if (preg_match("/^(http|https):/i", $value->href)) {
+            } else if (preg_match("/^\/[^\/].+/", $value->href)) {
+                $value = str_replace($value->href, $search . $value->href, $value);
+            }
+        }
+        $resultAtr[] = $value;
+    }
+    return $resultAtr;
+}
+
+//CSS配列を再帰的に置換処理
+function css_array_get($search, $array) {
+    foreach ($array->find('link[rel="stylesheet"],link[media="all"],link[media="screen"]') as $value) {
+        if (is_array($value)) {
+            $value = css_array_get($search, $array);
+        } else {
+            if (preg_match("/^(http|https):/i", $value->href)) {
+                $value = mb_convert_encoding(@file_get_contents($value->href),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+            } else if (preg_match("/^\/[^\/].+/", $value->href)) {
+                $value = mb_convert_encoding(@file_get_contents($search . $value->href),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+            }
+        }
+        $resultAtr[] = $value;
+    }
+    return $resultAtr;
+}
 
   $cache = new Cache();
   $html = $cache->get('html');
@@ -29,41 +81,20 @@ require_once dirname(__FILE__) . '/Cache.php';
   if (!empty($_POST["url"])) {
       $url = $_POST["url"];
       // HTMLソース取得
-      $html = mb_convert_encoding(@file_get_contents($url),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
-      $html = preg_replace('/<\s*meta\s+charset\s*=\s*["\'](.+)["\']\s*\/?\s*>/i', '<meta charset="${1}"><meta http-equiv="Content-Type" content="text/html; charset=${1}">', $html);
+      $html = file_get_html($url);
       // CSSのソースを取得し、外部で取ってくるように置き換える
-      $doc = new DOMDocument();
-      $doc->loadHTML(@$html);
-      $xml = simplexml_import_dom(@$doc);
-      $results = $xml->xpath('//*[@rel="stylesheet" or @media="all" or @media="screen"]');    
-      foreach($results as $line) {
-          if ($line->xpath('@href') != false) {
-              if(preg_match('/^(http|https):/i', $line['href'])) {
-                $css_url[] = mb_convert_encoding(@file_get_contents($line['href']),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
-              } else {
-                $html = str_replace($line['href'], $url . $line['href'], $html);
-                $css_url[] = mb_convert_encoding(@file_get_contents( $url . $line['href']),"UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
-             }
-          }
-      }
-      // 画像のソースを取得し、外部で取ってくるように置き換える
-      $results = $xml->xpath('//img/@src');
-      //$html = arrayReplace($xml, "", $url);
-      foreach($results as $line) {
-         if ($line->xpath('@src') != false) {
-              switch (true) {
-                  case preg_match("/^(http|https):/i", $line):
-                    break;
-                  case preg_match("/^\/[^\/].+/", $line):
-                     $html = str_replace($line, $url . $line, $html);
-                    break;
 
-              }
-        } else {
-               $replace = $url . $line['src'];
-               $html = str_replace($line['src'], $url . $line['src'], $html);
-        }
-      }
+      $css_from = css_array_flatten($html);
+      $css_to = css_array_replace($url, $html);
+      $css_replace = array_combine($css_from, $css_to); 
+      // 画像のソースを取得し、外部で取ってくるように置き換える
+      
+      $img_from = img_array_flatten($html);
+      $img_to = img_array_replace($url, $html);
+      $img_replace = array_combine($img_from, $img_to);
+      $css_url = css_array_get($url, $html);
+      $html = strtr($html, $css_replace);
+      $html = strtr($html, $img_replace);
     // サイト情報を保存する
     if (!empty($_POST["save"])) {
         $cache->put('html', htmlspecialchars_decode($html));
