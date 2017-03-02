@@ -119,8 +119,10 @@ function css_array_get($search, $array) {
 
   $cache = new Cache();
   $html = $cache->get('html');
-  if ($html != false) {
-    $css_url = $cache->get_css('html');
+  $css_url = array();
+  $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+  for($count = 1; $count < $iterator->count(); $count++) {
+      $css_url[] = $cache->get("css${count}");
   }
   if (!empty($_POST["url"])) {
       $url = $_POST["url"];
@@ -147,6 +149,11 @@ function css_array_get($search, $array) {
     // サイト情報を保存する
     if (!empty($_POST["save"])) {
         $cache->put('html', htmlspecialchars_decode($html));
+        $count = 1;
+        foreach($css_url as $css) {
+            $cache->put("css${count}", $css);
+            $count++;
+        }
     }
     /******************/
   }
