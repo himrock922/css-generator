@@ -119,12 +119,21 @@ function css_array_get($search, $array) {
 
   $cache = new Cache();
   $html = $cache->get('html');
-  $css_url = array();
-  $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-  for($count = 1; $count < $iterator->count(); $count++) {
-      $css_url[] = $cache->get("css${count}");
+  if($html != false) {
+     $css_url = array();
+    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+    for($count = 1; $count <= $iterator->count(); $count++) {
+        $css_url[] = $cache->get("css${count}");
+    }
   }
   if (!empty($_POST["url"])) {
+      if (!empty($_POST["save"])) {
+          $html =$cache->delete('html');
+          $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+          for($count = 1; $count <= $iterator->count(); $count++) {
+              $cache->delete("css${count}");
+            }
+      }
       $url = $_POST["url"];
       // HTMLソース取得
       $html = file_get_html($url);
@@ -145,7 +154,9 @@ function css_array_get($search, $array) {
 
       $html = strtr($html, $css_replace);
       $html = strtr($html, $img_replace);
-      $html = strtr($html, $input_replace);
+      if($input_replace != false) {
+        $html = strtr($html, $input_replace);
+      }
     // サイト情報を保存する
     if (!empty($_POST["save"])) {
         $cache->put('html', htmlspecialchars_decode($html));

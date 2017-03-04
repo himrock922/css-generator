@@ -22,6 +22,19 @@ class Cache
         }
     }
 
+    // ファイル削除
+    public function delete($key)
+    {
+        $filePath = $this->getFilePath($key);
+        if (file_exists($filePath))
+        {
+            return unlink($filePath);
+        }
+        else
+        {
+            return false;
+        }
+    }
     // キャッシュファイルパス取得
     private function getFilePath($key)
     {
