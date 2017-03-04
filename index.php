@@ -38,17 +38,20 @@ function input_array_flatten($array) {
 
 //画像配列を再帰的に置換処理
 function img_array_replace($search, $array) {
+    $host =  parse_url($search);
     foreach ($array->find('img') as $value) {
         if (is_array($value)) {
             $value = img_array_replace($search, $array);
         } else {
             if (preg_match("/^(http|https):/i", $value->src)) {
             } else if (preg_match("/^\/[^\/].+/", $value->src)) {
-                $value = str_replace($value->src, $search . $value->src, $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $value->src, $value);
             } else if (preg_match("/^\.\/(.+)/", $value->src)) {
-                $value = str_replace($value->src, $search . ltrim($value->src, "."), $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $host["path"] . ltrim($value->src, "."), $value);
             } else if (preg_match("/^([^\.\/]+)(.*)/", $value->src)) {
-                $value = str_replace($value->src, $search . "/" . $value->src, $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $host["path"] . "/" . $value->src, $value);
+            } else if (preg_match("/^\.\.\/.+/", $value->src)) {
+               $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . ltrim($value->src, ".."), $value);
             }
         }
         $resultAtr[] = $value;
@@ -58,17 +61,20 @@ function img_array_replace($search, $array) {
 
 //画像配列を再帰的に置換処理
 function input_array_replace($search, $array) {
+    $host =  parse_url($search);
     foreach ($array->find('input') as $value) {
         if (is_array($value)) {
             $value = input_array_replace($search, $array);
         } else {
             if (preg_match("/^(http|https):/i", $value->src)) {
             } else if (preg_match("/^\/[^\/].+/", $value->src)) {
-                $value = str_replace($value->src, $search . $value->src, $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $value->src, $value);
             } else if (preg_match("/^\.\/(.+)/", $value->src)) {
-                $value = str_replace($value->src, $search . ltrim($value->src, "."), $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $host["path"] . ltrim($value->src, "."), $value);
             } else if (preg_match("/^([^\.\/]+)(.*)/", $value->src)) {
-                $value = str_replace($value->src, $search . "/" . $value->src, $value);
+                $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . $host["path"] . "/" . $value->src, $value);
+            } else if (preg_match("/^\.\.\/.+/", $value->src)) {
+               $value = str_replace($value->src, $host["scheme"] . "://" . $host["host"] . ltrim($value->src, ".."), $value);
             }
         }
         $resultAtr[] = $value;
@@ -78,17 +84,20 @@ function input_array_replace($search, $array) {
 
 //CSS配列を再帰的に置換処理
 function css_array_replace($search, $array) {
+    $host =  parse_url($search);
     foreach ($array->find('link[rel="stylesheet"],link[media="all"],link[media="screen"]') as $value) {
         if (is_array($value)) {
             $value = css_array_replace($search, $array);
         } else {
             if (preg_match("/^(http|https):/i", $value->href)) {
             } else if (preg_match("/^\/[^\/].+/", $value->href)) {
-                $value = str_replace($value->href, $search . $value->href, $value);
+                $value = str_replace($value->href, $host["scheme"] . "://" . $host["host"] . $value->href, $value);
             } else if (preg_match("/^\.\/(.+)/", $value->href)) {
-                $value = str_replace($value->href, $search . ltrim($value->href, "."), $value);
+                $value = str_replace($value->href, $host["scheme"] . "://" . $host["host"] . $host["path"] . ltrim($value->href, "."), $value);
             } else if (preg_match("/^([^\.\/]+)(.*)/", $value->href)) {
-                $value = str_replace($value->href, $search . "/" . $value->href, $value);
+                $value = str_replace($value->href, $host["scheme"] . "://" . $host["host"] . $host["path"] . "/" . $value->href, $value);
+            } else if (preg_match("/^\.\.\/.+/", $value->href)) {
+                $value = str_replace($value->href, $host["scheme"] . "://" . $host["host"] . ltrim($value->href, ".."), $value);
             }
         }
         $resultAtr[] = $value;
@@ -98,6 +107,7 @@ function css_array_replace($search, $array) {
 
 //CSS配列を再帰的に置換処理
 function css_array_get($search, $array) {
+    $host =  parse_url($search);
     foreach ($array->find('link[rel="stylesheet"],link[media="all"],link[media="screen"]') as $value) {
         if (is_array($value)) {
             $value = css_array_get($search, $array);
@@ -105,12 +115,15 @@ function css_array_get($search, $array) {
             if (preg_match("/^(http|https):/i", $value->href)) {
                 $value = mb_convert_encoding(@file_get_contents($value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^\/[^\/].+/", $value->href)) {
-                $value = mb_convert_encoding(@file_get_contents($search . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+                $value = mb_convert_encoding(@file_get_contents($value->href, $host["scheme"] . "://" . $host["host"] . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^\.\/(.+)/", $value->href)) {
-                $value = mb_convert_encoding(@file_get_contents($search . ltrim($value->href, ".")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+                $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $host["path"]  . ltrim($value->href, ".")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^([^\.\/]+)(.*)/", $value->href)) {
-                $value = mb_convert_encoding(@file_get_contents($search . "/" . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+                $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $host["path"]  . "/" . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+            } else if (preg_match("/^\.\.\/.+/", $value->href)) {
+                $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . ltrim($value->href, "..")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             }
+
         }
         $resultAtr[] = $value;
     }
@@ -187,11 +200,13 @@ function css_array_get($search, $array) {
 <div style="text-align:center">
   <h2>CSS変更フォーム</h2>
   <?php 
-    $count = 1;
-    foreach($css_url as $css) {
-      echo "CSS{$count}\n";
-      $count++;
-  } ?>
+    $cache = new Cache();
+    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+    for($count = 1; $count < $iterator->count(); $count++) {
+      echo "CSS{$count}";
+      echo nl2br("\n"); //<br />タグが挿入される。
+    }
+  ?>
 </div>
 <?php }
 ?>

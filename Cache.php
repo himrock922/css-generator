@@ -22,6 +22,19 @@ class Cache
         }
     }
 
+        public function get_css($key)
+    {
+        $filePath = $this->getFilePath($key);
+        if (file_exists($filePath))
+        {
+            return file_get_html($filePath);
+        }
+        else
+        {
+            return false;
+        }
+    }
+
     // ファイル削除
     public function delete($key)
     {
