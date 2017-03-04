@@ -120,9 +120,9 @@ function css_array_get($search, $array) {
   $cache = new Cache();
   $html = $cache->get('html');
   if($html != false) {
-     $css_url = array();
+    $css_url = array();
     $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-    for($count = 1; $count <= $iterator->count(); $count++) {
+    for($count = 1; $count < $iterator->count(); $count++) {
         $css_url[] = $cache->get("css${count}");
     }
   }
@@ -130,7 +130,7 @@ function css_array_get($search, $array) {
       if (!empty($_POST["save"])) {
           $html =$cache->delete('html');
           $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-          for($count = 1; $count <= $iterator->count(); $count++) {
+          for($count = 1; $count < $iterator->count(); $count++) {
               $cache->delete("css${count}");
             }
       }
@@ -183,7 +183,18 @@ function css_array_get($search, $array) {
 ?>
 
 
-
+<?php if(!empty($css_url)) { ?>
+<div style="text-align:center">
+  <h2>CSS変更フォーム</h2>
+  <?php 
+    $count = 1;
+    foreach($css_url as $css) {
+      echo "CSS{$count}\n";
+      $count++;
+  } ?>
+</div>
+<?php }
+?>
 <?php if (!empty($css_url)) { ?>
 <div style="text-align:center">
 <h2>CSSの出力</h2>
