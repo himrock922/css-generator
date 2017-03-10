@@ -115,7 +115,7 @@ function css_array_get($search, $array) {
             if (preg_match("/^(http|https):/i", $value->href)) {
                 $value = mb_convert_encoding(@file_get_contents($value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^\/[^\/].+/", $value->href)) {
-                $value = mb_convert_encoding(@file_get_contents($value->href, $host["scheme"] . "://" . $host["host"] . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+                $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $value->href), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^\.\/(.+)/", $value->href)) {
                 $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $host["path"]  . ltrim($value->href, ".")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
             } else if (preg_match("/^([^\.\/]+)(.*)/", $value->href)) {
