@@ -149,7 +149,7 @@ function css_array_get($search, $array) {
       }
       $url = $_POST["url"];
       // HTMLソース取得
-      $html = file_get_html($url);
+      $html = file_get_html($url, false, null, -1, -1, true, true, DEFAULT_TARGET_CHARSET, false);
       // CSSのソースを取得し、外部で取ってくるように置き換える
       $css_from = css_array_flatten($html);
       $css_to = css_array_replace($url, $html);
