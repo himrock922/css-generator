@@ -2,6 +2,8 @@
 require "simple_html_dom.php";
 require_once dirname(__FILE__) . '/config.php';
 require_once dirname(__FILE__) . '/Cache.php';
+require_once dirname(__FILE__) . '/CssSelector.php';
+require_once 'vendor/autoload.php';
 
 function img_array_flatten($array) {
     foreach($array->find('img') as $values) {
@@ -203,8 +205,17 @@ function css_array_get($search, $array) {
     $cache = new Cache();
     $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
     for($count = 1; $count < $iterator->count(); $count++) {
-      echo "CSS{$count}";
-      echo nl2br("\n"); //<br />タグが挿入される。
+      $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+      $oCss = $oParser->parse();
+      echo "<form>";
+      echo "<div>";
+      foreach($oCss->getAllRuleSets() as $oRuleSet) {
+          foreach($oRuleSet->getRules() as $Rule) {
+              form_rule($Rule->getRule());
+          }
+      }
+      echo "</div>";
+      echo "</form>";
     }
   ?>
 </div>
