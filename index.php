@@ -207,14 +207,16 @@ function css_array_get($search, $array) {
     for($count = 1; $count < $iterator->count(); $count++) {
       $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
       $oCss = $oParser->parse();
-      echo "<form>";
-      echo "<div>";
+      echo "<form action='index.php' method='post'>";
       foreach($oCss->getAllRuleSets() as $oRuleSet) {
+          $selector = explode("{", $oRuleSet);
           foreach($oRuleSet->getRules() as $Rule) {
-              form_rule($Rule->getRule());
+              form_rule($Rule->getRule(), $selector);
           }
       }
-      echo "</div>";
+      if (!empty($oCss->getAllRuleSets())) {
+          echo "<p><input type=submit value=CSS${count}を更新></p>";
+      }
       echo "</form>";
     }
   ?>
