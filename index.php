@@ -3,6 +3,7 @@ require "simple_html_dom.php";
 require_once dirname(__FILE__) . '/config.php';
 require_once dirname(__FILE__) . '/Cache.php';
 require_once dirname(__FILE__) . '/CssSelector.php';
+require_once dirname(__FILE__) . '/html.php';
 require_once 'vendor/autoload.php';
 
 function img_array_flatten($array) {
@@ -181,68 +182,84 @@ function css_array_get($search, $array) {
             $count++;
         }
     }
+    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+    for($count = 1; $count < $iterator->count(); $count++) {
+        if(!empty($_POST["css${count}"])) {
+            echo $_POST["css${count}"];
+        }
+        $css_url[] = $cache->get("css${count}");
+    }
     /******************/
   }
 ?>
-<!DOCTYPE html>
-<html lang="ja"> 
-<head>
-<meta charset="UTF-8">
-<title>CSSジェネレーター</title>
-</head>
-<body>
-<div>
 <?php if (!empty($html)) {
     echo htmlspecialchars_decode($html);
     }
 ?>
-
-
-<?php if(!empty($css_url)) { ?>
-<div style="text-align:center">
-  <h2>CSS変更フォーム</h2>
-  <?php 
-    $cache = new Cache();
-    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-    for($count = 1; $count < $iterator->count(); $count++) {
-      $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
-      $oCss = $oParser->parse();
-      echo "<form action='index.php' method='post'>";
-      foreach($oCss->getAllRuleSets() as $oRuleSet) {
-          $selector = explode("{", $oRuleSet);
-          foreach($oRuleSet->getRules() as $Rule) {
-              form_rule($Rule->getRule(), $selector);
-          }
-      }
-      if (!empty($oCss->getAllRuleSets())) {
-          echo "<p><input type=submit value=CSS${count}を更新></p>";
-      }
-      echo "</form>";
-    }
-  ?>
-</div>
-<?php }
-?>
-<?php if (!empty($css_url)) { ?>
-<div style="text-align:center">
-<h2>CSSの出力</h2>
-<?php foreach($css_url as $css) { ?>
-    <div>
-        <textarea cols="70" rows="70">
-            <?php echo($css); ?>
-        </textarea>
+<!DOCTYPE html>
+<html lang="ja"> 
+  <head>
+    <meta charset="UTF-8">
+    <!-- Minified - Latest version -->
+    <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.css">
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.js"></script>
+    <script src="color.js"></script>
+    <title>CSSジェネレーター</title>
+  </head>
+  <body style="text-align:center;">
+    <div class="container">
+      <div class="row">
+        <h1> CSSジェネレーター</h1>
+          <form method="post">
+            <p><label>URL：<input type="url" name="url" size="40"></label> <input type="submit" value="送信"></p>
+            <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+          </form>
+      </div>
+      <?php if(!empty($css_url)) { ?>
+      <div class="row">
+        <h2>CSS変更フォーム</h2>
+            <?php
+            $cache = new Cache();
+            $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+            for($count = 1; $count < $iterator->count(); $count++) {
+                $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+                $oCss = $oParser->parse();
+                echo "<form action='index.php' method='post'>";
+                echo "<ul>";
+                foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                    $selector = explode("{", $oRuleSet);
+                    foreach($oRuleSet->getRules() as $Rule) {
+                        form_rule($Rule->getRule(), $selector);
+                    }
+                }
+                if (!empty($oCss->getAllRuleSets())) {
+                    echo "<li><input type=submit value=CSS${count}を更新 name=css${count}></li>";
+                }
+                echo "</ul>";
+                echo "</form>";
+            } ?>
+      </div>
+      <?php } ?>
+      <?php if (!empty($css_url)) { ?>
+      <div class="row">
+        <h2>CSSの出力</h2>
+        <?php foreach($css_url as $css) { ?>
+        <form>
+          <textarea cols="70" rows="70">
+          <?php echo($css); ?>
+          </textarea>
+        </form>
+        <?php } ?>
+      </div>
+      <?php } ?>
+      <div class="row">
+        <h1> CSSジェネレーター</h1>
+        <form method="post">
+            <p><label>URL：<input type="url" name="url" size="40"></label> <input type="submit" value="送信"></p>
+            <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+        </form>
+      </div>
     </div>
-<?php   }
-}
-?>
-
-</div>
-<div style="text-align:center">
-    <h1> CSSジェネレーター</h1>
-    <form method="post">
-        <p><label>URL：<input type="url" name="url" size="40"></label> <input type="submit" value="送信"></p>
-        <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
-    </form>
-</div>
-</body>
+  </body>
 </html>
