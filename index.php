@@ -3,7 +3,6 @@ require "simple_html_dom.php";
 require_once dirname(__FILE__) . '/config.php';
 require_once dirname(__FILE__) . '/Cache.php';
 require_once dirname(__FILE__) . '/CssSelector.php';
-require_once dirname(__FILE__) . '/html.php';
 require_once 'vendor/autoload.php';
 
 function img_array_flatten($array) {
