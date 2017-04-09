@@ -219,27 +219,45 @@ function css_array_get($search, $array) {
       <div class="row">
         <h2>CSS変更フォーム</h2>
             <?php
-            $cache = new Cache();
-            $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
             for($count = 1; $count < $iterator->count(); $count++) {
                 $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
                 $oCss = $oParser->parse();
                 echo "<form action='index.php' method='post'>";
                 echo "<ul>";
                 foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                    $selector = explode("{", $oRuleSet);
-                    foreach($oRuleSet->getRules() as $Rule) {
-                        form_rule($Rule->getRule(), $selector);
+                    if (!empty($oCss->getAllRuleSets())) {
+                        $selector = explode("{", $oRuleSet);
+                        foreach($oRuleSet->getRules() as $Rule) {
+                            form_rule($Rule->getRule(), $selector, $count);
+                        }
+                        echo "<li><input type=submit value=CSS${count}を更新></li>";
                     }
-                }
-                if (!empty($oCss->getAllRuleSets())) {
-                    echo "<li><input type=submit value=CSS${count}を更新 name=css${count}></li>";
                 }
                 echo "</ul>";
                 echo "</form>";
             } ?>
       </div>
-      <?php } ?>
+      <?php }
+     /* for($count = 1; $count < $iterator->count(); $count++) {
+          if(!empty($_POST["css${count}"])) {
+              $css_count[] = $_POST["css${count}"];
+              $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+              $oCss = $oParser->parse();
+            /*  foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                  $tag_count = 0;
+                  foreach($oRuleSet->getRules() as $Rule) {
+                       /* if(!empty($css_count["${tag_count}"])) {
+                            $Rule->setValue($css_count["${tag_count}"]);
+                        }
+                        $tag_count++;
+                  }
+              }
+              $cache->put("css${count}", $oParser);
+          }
+          //$css_url[] = array();
+          //$css_url[] = $cache->get("css${count}");
+      }*/
+      ?>
       <?php if (!empty($css_url)) { ?>
       <div class="row">
         <h2>CSSの出力</h2>
