@@ -53,4 +53,8 @@ class Cache
     {
         return CACHE_DIR . sha1(serialize($key));
     }
+    public function getCacheFilePath($key)
+    {
+         return 'cache/' . sha1(serialize($key));
+    }
 }

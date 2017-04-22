@@ -132,18 +132,80 @@ function css_array_get($search, $array) {
     return $resultAtr;
 }
 
+function css_import_get($search, $import) {
+    $host =  parse_url($search);
+    if (preg_match("/^(http|https):/i", $import)) {
+        $value = mb_convert_encoding(@file_get_contents($import), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+    } else if (preg_match("/^\/[^\/].+/", $import)) {
+        $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $import), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+    } else if (preg_match("/^\.\/(.+)/", $import)) {
+        $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $host["path"]  . ltrim($import, ".")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+    } else if (preg_match("/^([^\.\/]+)(.*)/", $import)) {
+        $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . $host["path"]  . "/" . $import), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+    } else if (preg_match("/^\.\.\/.+/", $import)) {
+        $value = mb_convert_encoding(@file_get_contents($host["scheme"] . "://" . $host["host"] . ltrim($import, "..")), "UTF-8", "ASCII,JIS,UTF-8,EUC-JP,SJIS");
+    }
+    return $value;
+}
+/**
+ * Extract URLs from CSS text.
+ */
+function extract_css_urls( $text )
+{
+    $urls = array( );
+ 
+    $url_pattern     = '(([^\\\\\'", \(\)]*(\\\\.)?)+)';
+    $urlfunc_pattern = 'url\(\s*[\'"]?' . $url_pattern . '[\'"]?\s*\)';
+    $pattern         = '/(' .
+         '(@import\s*[\'"]' . $url_pattern     . '[\'"])' .
+        '|(@import\s*'      . $urlfunc_pattern . ')'      .
+        '|('                . $urlfunc_pattern . ')'      .  ')/iu';
+    if ( !preg_match_all( $pattern, $text, $matches ) )
+        return $urls;
+ 
+    // @import '...'
+    // @import "..."
+    foreach ( $matches[3] as $match )
+        if ( !empty($match) )
+            $urls['import'][] = 
+                preg_replace( '/\\\\(.)/u', '\\1', $match );
+ 
+    // @import url(...)
+    // @import url('...')
+    // @import url("...")
+    foreach ( $matches[7] as $match )
+        if ( !empty($match) )
+            $urls['import'][] = 
+                preg_replace( '/\\\\(.)/u', '\\1', $match );
+ 
+    // url(...)
+    // url('...')
+    // url("...")
+    foreach ( $matches[11] as $match )
+        if ( !empty($match) )
+            $urls['property'][] = 
+                preg_replace( '/\\\\(.)/u', '\\1', $match );
+ 
+    return $urls;
+}
+
   $cache = new Cache();
-  $html = $cache->get('html');
-  if($html != false) {
+  $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+  if(!empty($html)) {
     $css_url = array();
     $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
     for($count = 1; $count < $iterator->count(); $count++) {
         $css_url[] = $cache->get("css${count}");
+        $css_path = $cache->getCacheFilePath("css${count}");
+        $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
     }
+    $css_from = css_array_flatten($html);
+    $css_replace = array_combine($css_from, $cache_css); 
+    $html = strtr($html, $css_replace);
   }
   if (!empty($_POST["url"])) {
       if (!empty($_POST["save"])) {
-          $html =$cache->delete('html');
+          $html = $cache->delete('html');
           $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
           for($count = 1; $count < $iterator->count(); $count++) {
               $cache->delete("css${count}");
@@ -161,12 +223,22 @@ function css_array_get($search, $array) {
       $img_to = img_array_replace($url, $html);
       $img_replace = array_combine($img_from, $img_to);
       // CSSファイルを取得
-      $css_url = css_array_get($url, $html);
+      $from_url = css_array_get($url, $html);
       // input画像のソースを取得し、外部で取ってくるように置き換える
       $input_from = input_array_flatten($html);
       $input_to = input_array_replace($url, $html);
       $input_replace = array_combine($input_from, $input_to);
 
+      foreach($from_url as $css) {
+          $matchs = extract_css_urls($css);
+          if(empty($matchs['import'])) {
+              continue;
+          }
+          foreach($matchs['import'] as $import) {
+              $import_url[] = css_import_get($url, $import);
+          }
+      }
+      $css_url = array_merge($from_url, $import_url);
       $html = strtr($html, $css_replace);
       $html = strtr($html, $img_replace);
       if($input_replace != false) {
@@ -181,6 +253,7 @@ function css_array_get($search, $array) {
             $count++;
         }
     }
+    $css_url = array();
     $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
     for($count = 1; $count < $iterator->count(); $count++) {
         if(!empty($_POST["css${count}"])) {
@@ -225,37 +298,57 @@ function css_array_get($search, $array) {
                 echo "<form action='index.php' method='post'>";
                 echo "<ul>";
                 foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                    if (!empty($oCss->getAllRuleSets())) {
+                    if (!empty($oRuleSet)) {
                         $selector = explode("{", $oRuleSet);
                         foreach($oRuleSet->getRules() as $Rule) {
                             form_rule($Rule->getRule(), $selector, $count);
                         }
-                        echo "<li><input type=submit value=CSS${count}を更新></li>";
                     }
+                }
+                if (!empty($oRuleSet)) {
+                    echo "<li><input type=submit value=CSS${count}を更新></li>";
+                } else {
+                  /*  $import_css = $cache->get("css${count}");
+
+                    $dom = new DOMDocument();
+                    @$dom->loadHTML($import_css);
+                    $css = simplexml_import_dom($dom);
+                    for($import_count = 1; $import_count < $iterator->count(); $import_count++) {
+                        if($count == $import_count) {
+                            echo $count;
+                            continue;
+                        } 
+                        $css_path_replace[] = $cache->getCacheFilePath("cs${import_count}");
+                    }
+                    print_r($css_path_replace);
+                    $matchs = extract_css_urls($import_css);
+                    print_r($matchs['import']);
+                    //      foreach($matches[1] as $url){
+                    //          print $url . "<br />";
+                    //    }
+                   // var_dump($css);*/
                 }
                 echo "</ul>";
                 echo "</form>";
             } ?>
       </div>
       <?php }
-     /* for($count = 1; $count < $iterator->count(); $count++) {
+    /*   $css_url[] = array();
+        for($count = 1; $count < $iterator->count(); $count++) {
           if(!empty($_POST["css${count}"])) {
-              $css_count[] = $_POST["css${count}"];
+              $css_array = $_POST["css${count}"];
               $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
               $oCss = $oParser->parse();
-            /*  foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                  $tag_count = 0;
+              foreach($oCss->getAllRuleSets() as $oRuleSet) {
                   foreach($oRuleSet->getRules() as $Rule) {
-                       /* if(!empty($css_count["${tag_count}"])) {
-                            $Rule->setValue($css_count["${tag_count}"]);
+                        if(!empty(current($css_array))) {
+                            $Rule->setValue(current($css_array));
                         }
-                        $tag_count++;
                   }
               }
-              $cache->put("css${count}", $oParser);
+          $cache->put("css${count}", $oCss);
+          $css_url[] = $cache->get("css${count}");
           }
-          //$css_url[] = array();
-          //$css_url[] = $cache->get("css${count}");
       }*/
       ?>
       <?php if (!empty($css_url)) { ?>
