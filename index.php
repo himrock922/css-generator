@@ -369,7 +369,7 @@ function deleteBom($str)
                         if (!empty($oRuleSet)) {
                             $selector = explode("{", $oRuleSet);
                             foreach($oRuleSet->getRules() as $Rule) {
-                                form_rule($Rule->getRule(), $selector, $count);
+                                form_rule($Rule->getRule(), $selector, $count, $Rule->getValue());
                             }
                         }
                     }
@@ -386,7 +386,7 @@ function deleteBom($str)
                         if (!empty($oRuleSet)) {
                             $selector = explode("{", $oRuleSet);
                             foreach($oRuleSet->getRules() as $Rule) {
-                                form_rule($Rule->getRule(), $selector, $count);
+                                form_rule($Rule->getRule(), $selector, $count, $Rule->getValue());
                             }
                         }
                     }
@@ -402,9 +402,11 @@ function deleteBom($str)
             ?>
       </div>
       <?php }
+        if(empty($css_array)) {
+            $css_url = array();
+        }
         for($count = 1; $count < $iterator->count(); $count++) {
           if(!empty($_POST["css${count}"])) {
-              $css_url = array();
               $css_array = $_POST["css${count}"];
               if($cache->get("css${count}")) {
                   $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
@@ -429,6 +431,12 @@ function deleteBom($str)
                       }
                   }
                   $cache->put("import${count}", $oCss);
+                  $css_url[] = $cache->get("import${count}");
+              }
+          } else {
+              if($cache->get("css${count}")) {
+                  $css_url[] = $cache->get("css${count}");
+              } else if ($cache->get("import${count}")) {
                   $css_url[] = $cache->get("import${count}");
               }
           }
