@@ -189,27 +189,50 @@ function extract_css_urls( $text )
     return $urls;
 }
 
+/**
+* 文字列からBOMデータを削除する
+*
+* @param string $str 対象文字列
+* @return string $str BOM削除した文字列
+*/
+function deleteBom($str)
+{
+    if (($str == NULL) || (mb_strlen($str) == 0)) {
+        return $str;
+    }
+    if (ord($str{0}) == 0xef && ord($str{1}) == 0xbb && ord($str{2}) == 0xbf) {
+        $str = substr($str, 3);
+    }
+    return $str;
+}
+
   $cache = new Cache();
   $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+  $css_url = array();
   if(!empty($html)) {
-    $css_url = array();
-    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-    for($count = 1; $count < $iterator->count(); $count++) {
-        $css_url[] = $cache->get("css${count}");
-        $css_path = $cache->getCacheFilePath("css${count}");
-        $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
-    }
-    $css_from = css_array_flatten($html);
-    $css_replace = array_combine($css_from, $cache_css); 
-    $html = strtr($html, $css_replace);
+      $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+      for($count = 1; $count < $iterator->count(); $count++) {
+          if($cache->get("css${count}")) {
+              $css_url[] = $cache->get("css${count}");
+          } else if($cache->get("import${count}")) {
+              $css_url[] = $cache->get("import${count}");
+          } else if($cache->get_import("css${count}")) {
+              $css_url[] = $cache->get_import("css${count}");
+          }
+      }
   }
+  echo count($css_url);
   if (!empty($_POST["url"])) {
       if (!empty($_POST["save"])) {
           $html = $cache->delete('html');
           $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
           for($count = 1; $count < $iterator->count(); $count++) {
-              $cache->delete("css${count}");
-            }
+              if(!$cache->delete("css${count}")) {
+                  if(!$cache->delete("import${count}")) {
+                      $cache->delete_import("css{count}");
+                  }
+              }
+          }
       }
       $url = $_POST["url"];
       // HTMLソース取得
@@ -248,20 +271,59 @@ function extract_css_urls( $text )
     if (!empty($_POST["save"])) {
         $cache->put('html', htmlspecialchars_decode($html));
         $count = 1;
-        foreach($css_url as $css) {
+        $i_matchs = "";
+        $i_css = "";
+        $i_count = 0;
+        $i_url = array();
+        $import_css_to = array();
+        foreach($from_url as $css) {
+            $matchs = extract_css_urls($css);
+            if(!empty($matchs['import'])) {
+              $i_matchs = $matchs['import'];
+              $i_count = $count;
+              $i_css = $css;
+              $count++;
+              continue;
+            }
+            $css = deleteBom($css);
             $cache->put("css${count}", $css);
+            $import_css_to[] = $css;
             $count++;
         }
-    }
-    $css_url = array();
+        foreach($import_url as $css) {
+            $css = deleteBom($css);
+            $cache->put("import${count}", $css);
+            $i_url[] = $cache->getCacheImportFilePath("import${count}");
+            $count++;
+        }
+        $i_css = str_replace($i_matchs, $i_url, $i_css);
+        $i_css = deleteBom($i_css);
+        $cache->put_import("css${i_count}", $i_css);
+        $import_css_to[] = $i_css;
+        $css_url = array();
+    $cache_css = array();
     $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
     for($count = 1; $count < $iterator->count(); $count++) {
-        if(!empty($_POST["css${count}"])) {
-            echo $_POST["css${count}"];
+        if($cache->get("css${count}")) {
+            $css_url[] = $cache->get("css${count}");
+            $css_path = $cache->getCacheFilePath("css${count}");
+            $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
+        } else if($cache->get("import${count}")) {
+            $css_url[] = $cache->get("import${count}");
+        } else if($cache->get_import("css${count}")) {
+            $css_url[] = $cache->get_import("css${count}");
+            $css_path = $cache->getCacheImportPath("css${count}");
+            $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
         }
-        $css_url[] = $cache->get("css${count}");
     }
+    $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+    $css_from = css_array_flatten($html);
+    $css_replace = array_combine($css_from, $cache_css);
+    $html = strtr($html, $css_replace);
+    $cache->put('html', htmlspecialchars_decode($html));
     /******************/
+    $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+    }
   }
 ?>
 <?php if (!empty($html)) {
