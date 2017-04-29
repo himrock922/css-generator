@@ -221,7 +221,6 @@ function deleteBom($str)
           }
       }
   }
-  echo count($css_url);
   if (!empty($_POST["url"])) {
       if (!empty($_POST["save"])) {
           $html = $cache->delete('html');
@@ -301,30 +300,30 @@ function deleteBom($str)
         $cache->put_import("css${i_count}", $i_css);
         $import_css_to[] = $i_css;
         $css_url = array();
-    $cache_css = array();
-    $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
-    for($count = 1; $count < $iterator->count(); $count++) {
-        if($cache->get("css${count}")) {
-            $css_url[] = $cache->get("css${count}");
-            $css_path = $cache->getCacheFilePath("css${count}");
-            $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
-        } else if($cache->get("import${count}")) {
-            $css_url[] = $cache->get("import${count}");
-        } else if($cache->get_import("css${count}")) {
-            $css_url[] = $cache->get_import("css${count}");
-            $css_path = $cache->getCacheImportPath("css${count}");
-            $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
+        $cache_css = array();
+        $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+        for($count = 1; $count < $iterator->count(); $count++) {
+            if($cache->get("css${count}")) {
+                $css_url[] = $cache->get("css${count}");
+                $css_path = $cache->getCacheFilePath("css${count}");
+                $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
+            } else if($cache->get("import${count}")) {
+                $css_url[] = $cache->get("import${count}");
+            } else if($cache->get_import("css${count}")) {
+                $css_url[] = $cache->get_import("css${count}");
+                $css_path = $cache->getCacheImportPath("css${count}");
+                $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
+            }
+        }
+        $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+        $css_from = css_array_flatten($html);
+        $css_replace = array_combine($css_from, $cache_css);
+        $html = strtr($html, $css_replace);
+        $cache->put('html', htmlspecialchars_decode($html));
+        // 最終的なHTMLデータを取得 //
+        $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
         }
     }
-    $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
-    $css_from = css_array_flatten($html);
-    $css_replace = array_combine($css_from, $cache_css);
-    $html = strtr($html, $css_replace);
-    $cache->put('html', htmlspecialchars_decode($html));
-    /******************/
-    $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
-    }
-  }
 ?>
 <?php if (!empty($html)) {
     echo htmlspecialchars_decode($html);
@@ -335,102 +334,132 @@ function deleteBom($str)
   <head>
     <meta charset="UTF-8">
     <!-- Minified - Latest version -->
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/buttons-min.css">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.css">
+     <link rel="stylesheet" type="text/css" href="pure.css">
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.js"></script>
     <script src="color.js"></script>
     <title>CSSジェネレーター</title>
   </head>
-  <body style="text-align:center;">
-    <div class="container">
-      <div class="row">
-        <h1> CSSジェネレーター</h1>
-          <form method="post">
-            <p><label>URL：<input type="url" name="url" size="40"></label> <input type="submit" value="送信"></p>
-            <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+  <body>
+    <div class="pure-g">
+      <div class="pure-u-1-1 pure-text">
+          <h1>CSSジェネレーター</h1>
+          <form method="post" class="pure-form">
+            <fieldset>
+              <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
+              <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+            </fieldset>
           </form>
       </div>
       <?php if(!empty($css_url)) { ?>
-      <div class="row">
+      <div class="pure-u-1-1">
         <h2>CSS変更フォーム</h2>
             <?php
             for($count = 1; $count < $iterator->count(); $count++) {
-                $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
-                $oCss = $oParser->parse();
-                echo "<form action='index.php' method='post'>";
-                echo "<ul>";
-                foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                    if (!empty($oRuleSet)) {
-                        $selector = explode("{", $oRuleSet);
-                        foreach($oRuleSet->getRules() as $Rule) {
-                            form_rule($Rule->getRule(), $selector, $count);
+                if($cache->get("css${count}")) {
+                    $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+                    $oCss = $oParser->parse();
+                    echo "<form action='index.php' method='post' class='pure-form pure-form-stacked pure-width'>";
+                    echo "<fieldset>";
+                    echo "<legend>CSS${count}</legend>";
+                    foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                        if (!empty($oRuleSet)) {
+                            $selector = explode("{", $oRuleSet);
+                            foreach($oRuleSet->getRules() as $Rule) {
+                                form_rule($Rule->getRule(), $selector, $count);
+                            }
                         }
                     }
-                }
-                if (!empty($oRuleSet)) {
-                    echo "<li><input type=submit value=CSS${count}を更新></li>";
-                } else {
-                  /*  $import_css = $cache->get("css${count}");
-
-                    $dom = new DOMDocument();
-                    @$dom->loadHTML($import_css);
-                    $css = simplexml_import_dom($dom);
-                    for($import_count = 1; $import_count < $iterator->count(); $import_count++) {
-                        if($count == $import_count) {
-                            echo $count;
-                            continue;
-                        } 
-                        $css_path_replace[] = $cache->getCacheFilePath("cs${import_count}");
+                    if (!empty($oRuleSet)) {
+                        echo "<label for='button'><button type='submit' class='pure-button pure-button-active'>CSS${count}を更新</button></label>";
                     }
-                    print_r($css_path_replace);
-                    $matchs = extract_css_urls($import_css);
-                    print_r($matchs['import']);
-                    //      foreach($matches[1] as $url){
-                    //          print $url . "<br />";
-                    //    }
-                   // var_dump($css);*/
+                } else if ($cache->get("import${count}")) {
+                    $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}"));
+                    $oCss = $oParser->parse();
+                    echo "<form action='index.php' method='post' class='pure-form pure-form-stacked pure-width'>";
+                    echo "<fieldset>";
+                    echo "<legend>CSS${count}</legend>";
+                    foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                        if (!empty($oRuleSet)) {
+                            $selector = explode("{", $oRuleSet);
+                            foreach($oRuleSet->getRules() as $Rule) {
+                                form_rule($Rule->getRule(), $selector, $count);
+                            }
+                        }
+                    }
+                    if (!empty($oRuleSet)) {
+                        echo "<label for='button'><button type='submit' class='pure-button pure-button-active'>CSS${count}を更新</button></label>";
+                    }
+                } else {
+                  echo "<pre>CSS${count}はimportファイルのため、表示を省略します。</pre>";
                 }
-                echo "</ul>";
+                echo "</fieldset>";
                 echo "</form>";
-            } ?>
+            }
+            ?>
       </div>
       <?php }
-    /*   $css_url[] = array();
         for($count = 1; $count < $iterator->count(); $count++) {
           if(!empty($_POST["css${count}"])) {
+              $css_url = array();
               $css_array = $_POST["css${count}"];
-              $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
-              $oCss = $oParser->parse();
-              foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                  foreach($oRuleSet->getRules() as $Rule) {
-                        if(!empty(current($css_array))) {
-                            $Rule->setValue(current($css_array));
-                        }
+              if($cache->get("css${count}")) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+                  $oCss = $oParser->parse();
+                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                      foreach($oRuleSet->getRules() as $Rule) {
+                          if(!empty(current($css_array))) {
+                              $Rule->setValue(current($css_array));
+                          }
+                      }
                   }
+                  $cache->put("css${count}", $oCss);
+                  $css_url[] = $cache->get("css${count}");
+              } else if ($cache->get("import${count}")) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}"));
+                  $oCss = $oParser->parse();
+                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                      foreach($oRuleSet->getRules() as $Rule) {
+                          if(!empty(current($css_array))) {
+                              $Rule->setValue(current($css_array));
+                          }
+                      }
+                  }
+                  $cache->put("import${count}", $oCss);
+                  $css_url[] = $cache->get("import${count}");
               }
-          $cache->put("css${count}", $oCss);
-          $css_url[] = $cache->get("css${count}");
           }
-      }*/
+      }
       ?>
-      <?php if (!empty($css_url)) { ?>
-      <div class="row">
+      <?php if (!empty($css_url)) {
+          $count = 1;
+      ?>
+      <div class="pure-u-1-1 pure-text">
         <h2>CSSの出力</h2>
         <?php foreach($css_url as $css) { ?>
-        <form>
-          <textarea cols="70" rows="70">
+        <form class="pure-form">
+          <p><?php echo "CSS${count}"; ?></p>
+          <textarea cols="70" rows="70" readonly>
           <?php echo($css); ?>
           </textarea>
         </form>
-        <?php } ?>
+        <?php
+        $count++;
+        } 
+        ?>
       </div>
       <?php } ?>
-      <div class="row">
-        <h1> CSSジェネレーター</h1>
-        <form method="post">
-            <p><label>URL：<input type="url" name="url" size="40"></label> <input type="submit" value="送信"></p>
-            <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
-        </form>
+      <div class="pure-u-1-1 pure-text">
+          <h1>CSSジェネレーター</h1>
+          <form method="post" class="pure-form">
+            <fieldset>
+              <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
+              <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+            </fieldset>
+          </form>
       </div>
     </div>
   </body>

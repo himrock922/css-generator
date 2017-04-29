@@ -1,0 +1,37 @@
+.pure-text {
+    text-align: center;
+}
+
+.pure-u-1-1 h2 {
+    font-size: 24px;
+    text-align: center;
+}
+
+.pure-u-1-1 h1 {
+    font-size: 36px;
+    text-align: center;
+}
+
+.pure-u-1-1 pre {
+    font-size: 20px;
+    text-align: center;
+    color: red;
+}
+
+.pure-u-1-1 legend {
+    font-size: 24px;
+}
+
+.pure-text h2 {
+    font-size: 24px;
+}
+
+.pure-text p {
+    font-size: 16px;
+}
+
+.pure-width {
+    width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+}
