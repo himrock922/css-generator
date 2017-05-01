@@ -351,6 +351,7 @@ function deleteBom($str)
             <fieldset>
               <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+              <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
           </form>
       </div>
@@ -459,16 +460,19 @@ function deleteBom($str)
         } 
         ?>
       </div>
-      <?php } ?>
+      <?php } 
+      if (!empty($html)) { ?>
       <div class="pure-u-1-1 pure-text">
           <h1>CSSジェネレーター</h1>
           <form method="post" class="pure-form">
             <fieldset>
               <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+              <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
           </form>
       </div>
+      <?php } ?>
     </div>
   </body>
 </html>
