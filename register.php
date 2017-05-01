@@ -6,11 +6,12 @@
     <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/pure-min.css" integrity="sha384-UQiGfs9ICog+LwheBSRCt1o5cbyKIHbwjWscjemyBMT9YCUMZffs6UqUTd0hObXD" crossorigin="anonymous">
     <link rel="stylesheet" href="https://unpkg.com/purecss@0.6.2/build/buttons-min.css">
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.css">
-     <link rel="stylesheet" type="text/css" href="pure.css">
+    <link rel="stylesheet" type="text/css" href="pure.css">
     <script src="https://code.jquery.com/jquery-3.2.1.min.js" integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4=" crossorigin="anonymous"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.0/spectrum.min.js"></script>
     <script src="color.js"></script>
     <script src="toggle.js"></script>
+    <script src="tag_add.js"></script>
     <title>CSSジェネレーター -CSS命令文登録フォーム-</title>
   </head>
   <body>
@@ -42,7 +43,17 @@
               </div>
               
               <div class="pure-control-group" id="select_tag" style="display:none">
-
+                  <table id="table_tag">
+                      <tr>
+                          <td>
+                              <label for="block">固定値</label>
+                              <input type="text" name="css['block'][]" size="20">
+                          </td>
+                      </tr>
+                  </table>
+                  <br />
+                  <button type="button" id="tag_add" class="pure-button pure-button-primary">フォームを追加</button>
+                  <button type="button" id="tag_delete" class="pure-button pure-button-error">フォームを削除</button>
               </div>
 
               <button type="submit" class="pure-button pure-button-success">登録</button>
@@ -55,7 +66,7 @@
           foreach($css as $test) {
               echo $test;
               foreach($test as $test2) {
-                  echo $test2;
+               echo $test2;
               }
           }
       }

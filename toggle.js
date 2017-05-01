@@ -1,4 +1,4 @@
-function entryChange1(){
+function entryChange(){
     radio = document.form.select_three.checked;
 
     if(radio == true) {
@@ -11,4 +11,4 @@ function entryChange1(){
     }
 }
 //オンロードさせ、リロード時に選択を保持
-window.onload = entryChange1;
+window.onload = entryChange;
