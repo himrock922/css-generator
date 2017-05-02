@@ -12,3 +12,11 @@ function entryChange(){
 }
 //オンロードさせ、リロード時に選択を保持
 window.onload = entryChange;
+
+window.onload = function () {
+        document.querySelector('#register').addEventListener('submit', function (e) {
+            if (!confirm("登録してもよろしいですか？")) {
+                e.preventDefault();
+            }
+        });
+    };

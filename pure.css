@@ -63,3 +63,7 @@
     text-decoration: none;
     color: white;
 }
+
+table#table_tag {
+margin:0 auto;
+}
