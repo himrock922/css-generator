@@ -207,7 +207,9 @@ function deleteBom($str)
 }
 
   $cache = new Cache();
-  $path = $_GET["url"];
+  if (!empty($_GET["url"])) {
+      $path = $_GET["url"];
+  }
   $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   $css_url = array();
   if(!empty($html)) {
@@ -222,7 +224,7 @@ function deleteBom($str)
           }
       }
   }
-  if (!empty($_GET["url"]) && !empty($css_url)) {
+  if (!empty($_GET["url"])) {
       if (!empty($_GET["save"])) {
           $html = $cache->delete('html', $path);
           $iterator = new GlobIterator(dirname(__FILE__). '/' . $path . '/*');
