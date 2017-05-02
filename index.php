@@ -207,33 +207,34 @@ function deleteBom($str)
 }
 
   $cache = new Cache();
-  $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+  $path = $_GET["url"];
+  $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   $css_url = array();
   if(!empty($html)) {
-      $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+      $iterator = new GlobIterator(dirname(__FILE__) . '/' . $path . '/*');
       for($count = 1; $count <= $iterator->count(); $count++) {
-          if($cache->get("css${count}")) {
-              $css_url[] = $cache->get("css${count}");
-          } else if($cache->get("import${count}")) {
-              $css_url[] = $cache->get("import${count}");
-          } else if($cache->get_import("css${count}")) {
-              $css_url[] = $cache->get_import("css${count}");
+          if($cache->get("css${count}", $path)) {
+              $css_url[] = $cache->get("css${count}", $path);
+          } else if($cache->get("import${count}", $path)) {
+              $css_url[] = $cache->get("import${count}", $path);
+          } else if($cache->get_import("css${count}", $path)) {
+              $css_url[] = $cache->get_import("css${count}", $path);
           }
       }
   }
-  if (!empty($_POST["url"])) {
-      if (!empty($_POST["save"])) {
-          $html = $cache->delete('html');
-          $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+  if (!empty($_GET["url"]) && !empty($css_url)) {
+      if (!empty($_GET["save"])) {
+          $html = $cache->delete('html', $path);
+          $iterator = new GlobIterator(dirname(__FILE__). '/' . $path . '/*');
           for($count = 1; $count < $iterator->count(); $count++) {
-              if(!$cache->delete("css${count}")) {
-                  if(!$cache->delete("import${count}")) {
-                      $cache->delete_import("css{count}");
+              if(!$cache->delete("css${count}", $path)) {
+                  if(!$cache->delete("import${count}", $path)) {
+                      $cache->delete_import("css{count}", $path);
                   }
               }
           }
       }
-      $url = $_POST["url"];
+      $url = "http://" . $_GET["url"];
       // HTMLソース取得
       $html = file_get_html($url, false, null, -1, -1, true, true, DEFAULT_TARGET_CHARSET, false);
       // CSSのソースを取得し、外部で取ってくるように置き換える
@@ -267,8 +268,18 @@ function deleteBom($str)
         $html = strtr($html, $input_replace);
       }
     // サイト情報を保存する
-    if (!empty($_POST["save"])) {
-        $cache->put('html', htmlspecialchars_decode($html));
+    if (!empty($_GET["save"])) {
+        $save = $_GET["save"];
+        if(file_exists($path)){
+
+        }else{
+            if(mkdir($path, 0777)){
+                chmod($path, 0777);
+            }else{
+
+            }
+        }
+        $cache->put('html', htmlspecialchars_decode($html), $path);
         $count = 1;
         $i_matchs = "";
         $i_css = "";
@@ -285,43 +296,43 @@ function deleteBom($str)
               continue;
             }
             $css = deleteBom($css);
-            $cache->put("css${count}", $css);
+            $cache->put("css${count}", $css, $path);
             $import_css_to[] = $css;
             $count++;
         }
         foreach($import_url as $css) {
             $css = deleteBom($css);
-            $cache->put("import${count}", $css);
+            $cache->put("import${count}", $css, $path);
             $i_url[] = $cache->getCacheImportFilePath("import${count}");
             $count++;
         }
         $i_css = str_replace($i_matchs, $i_url, $i_css);
         $i_css = deleteBom($i_css);
-        $cache->put_import("css${i_count}", $i_css);
+        $cache->put_import("css${i_count}", $i_css, $path);
         $import_css_to[] = $i_css;
         $css_url = array();
         $cache_css = array();
-        $iterator = new GlobIterator(dirname(__FILE__) . '/cache/*');
+        $iterator = new GlobIterator(dirname(__FILE__) . '/' . $path . '/*');
         for($count = 1; $count < $iterator->count(); $count++) {
-            if($cache->get("css${count}")) {
-                $css_url[] = $cache->get("css${count}");
-                $css_path = $cache->getCacheFilePath("css${count}");
+            if($cache->get("css${count}", $path)) {
+                $css_url[] = $cache->get("css${count}", $path);
+                $css_path = $cache->getCacheFilePath("css${count}", $path);
                 $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
-            } else if($cache->get("import${count}")) {
-                $css_url[] = $cache->get("import${count}");
-            } else if($cache->get_import("css${count}")) {
-                $css_url[] = $cache->get_import("css${count}");
-                $css_path = $cache->getCacheImportPath("css${count}");
+            } else if($cache->get("import${count}", $path)) {
+                $css_url[] = $cache->get("import${count}", $path);
+            } else if($cache->get_import("css${count}", $path)) {
+                $css_url[] = $cache->get_import("css${count}", $path);
+                $css_path = $cache->getCacheImportPath("css${count}", $path);
                 $cache_css[] = "<link rel=\"stylesheet\" type=\"text/css\" href=\"${css_path}\">";
             }
         }
-        $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+        $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
         $css_from = css_array_flatten($html);
         $css_replace = array_combine($css_from, $cache_css);
         $html = strtr($html, $css_replace);
-        $cache->put('html', htmlspecialchars_decode($html));
+        $cache->put('html', htmlspecialchars_decode($html), $path);
         // 最終的なHTMLデータを取得 //
-        $html = str_get_html($cache->get('html'), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
+        $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
         }
     }
 ?>
@@ -347,9 +358,9 @@ function deleteBom($str)
     <div class="pure-g">
       <div class="pure-u-1-1 pure-text">
           <h1>CSSジェネレーター</h1>
-          <form method="post" class="pure-form">
+          <form method="get" class="pure-form">
             <fieldset>
-              <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
+              <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
               <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
@@ -362,10 +373,10 @@ function deleteBom($str)
             $cssfile = file_get_contents("css_tag.json");
             $css_array = json_decode($cssfile, true);
             for($count = 1; $count < $iterator->count(); $count++) {
-                if($cache->get("css${count}")) {
-                    $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+                if($cache->get("css${count}", $path)) {
+                    $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}", $path));
                     $oCss = $oParser->parse();
-                    echo "<form action='index.php' method='post' class='pure-form pure-form-stacked pure-width'>";
+                    echo "<form action='index.php?url=${path}' method='post' class='pure-form pure-form-stacked pure-width'>";
                     echo "<fieldset>";
                     echo "<legend>CSS${count}</legend>";
                     foreach($oCss->getAllRuleSets() as $oRuleSet) {
@@ -379,10 +390,10 @@ function deleteBom($str)
                     if (!empty($oRuleSet)) {
                         echo "<label for='button'><button type='submit' class='pure-button pure-button-active'>CSS${count}を更新</button></label>";
                     }
-                } else if ($cache->get("import${count}")) {
-                    $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}"));
+                } else if ($cache->get("import${count}", $path)) {
+                    $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}", $path));
                     $oCss = $oParser->parse();
-                    echo "<form action='index.php' method='post' class='pure-form pure-form-stacked pure-width'>";
+                    echo "<form action='index.php?url=${path}' method='post' class='pure-form pure-form-stacked pure-width'>";
                     echo "<fieldset>";
                     echo "<legend>CSS${count}</legend>";
                     foreach($oCss->getAllRuleSets() as $oRuleSet) {
@@ -415,8 +426,8 @@ function deleteBom($str)
                   $css_array[] = $value;
               }
               $set_value = $css_array[0];
-              if($cache->get("css${count}")) {
-                  $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}"));
+              if($cache->get("css${count}", $path)) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}", $path));
                   $oCss = $oParser->parse();
                   $css_tmp = $css_array;
                   foreach($oCss->getAllRuleSets() as $oRuleSet) {
@@ -425,10 +436,10 @@ function deleteBom($str)
                       }
                       $set_value = next($css_array);
                   }
-                  $cache->put("css${count}", $oCss->render());
-                  $css_url[] = $cache->get("css${count}");
-              } else if ($cache->get("import${count}")) {
-                  $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}"));
+                  $cache->put("css${count}", $oCss->render(), $path);
+                  $css_url[] = $cache->get("css${count}", $path);
+              } else if ($cache->get("import${count}", $path)) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}", $path));
                   $oCss = $oParser->parse();
                   foreach($oCss->getAllRuleSets() as $oRuleSet) {
                       foreach($oRuleSet->getRules() as $Rule) {
@@ -436,16 +447,16 @@ function deleteBom($str)
                       }
                       $set_value = next($css_array);
                   }
-                  $cache->put("import${count}", $oCss->render());
-                  $css_url[] = $cache->get("import${count}");
+                  $cache->put("import${count}", $oCss->render(), $path);
+                  $css_url[] = $cache->get("import${count}", $path);
               }
           } else {
-              if($cache->get("css${count}")) {
-                  $css_url[] = $cache->get("css${count}");
-              } else if ($cache->get("import${count}")) {
-                  $css_url[] = $cache->get("import${count}");
-              } else if($cache->get_import("css${count}")) {
-                  $css_url[] = $cache->get_import("css${count}");
+              if($cache->get("css${count}", $path)) {
+                  $css_url[] = $cache->get("css${count}", $path);
+              } else if ($cache->get("import${count}", $path)) {
+                  $css_url[] = $cache->get("import${count}", $path);
+              } else if($cache->get_import("css${count}", $path)) {
+                  $css_url[] = $cache->get_import("css${count}", $path);
             }
           }
       }
@@ -471,9 +482,9 @@ function deleteBom($str)
       if (!empty($html)) { ?>
       <div class="pure-u-1-1 pure-text">
           <h1>CSSジェネレーター</h1>
-          <form method="post" class="pure-form">
+          <form method="get" class="pure-form">
             <fieldset>
-              <p><label>URL：<input type="url" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
+              <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
               <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
@@ -483,16 +494,3 @@ function deleteBom($str)
     </div>
   </body>
 </html>
-
-<?php 
-function array_set_pointer(&$array, $value)
-{
-    reset($array);
-    while($val=current($array))
-    {
-        if($val==$value) 
-            break;
-
-        next($array);
-    }
-}

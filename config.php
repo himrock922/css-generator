@@ -1,3 +1,3 @@
 <?php
 // キャッシュディレクトリ
-define('CACHE_DIR', dirname(__FILE__) . '/cache/');
+define('CACHE_DIR', dirname(__FILE__) . '/');
