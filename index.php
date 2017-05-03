@@ -368,7 +368,63 @@ function deleteBom($str)
             </fieldset>
           </form>
       </div>
-      <?php if(!empty($css_url)) { ?>
+      <?php if(!empty($css_url)) {
+        if(!empty($css_array)) {
+            $css_url = array();
+        }
+        for($count = 1; $count < $iterator->count(); $count++) {
+          if(!empty($_POST["css${count}"])) {
+              $css_array = array();
+              $flag = false;
+              foreach($_POST["css${count}"] as $key => $value) {
+                  $css_array[] = $value;
+              }
+              $set_value = $css_array[0];
+              if($cache->get("css${count}", $path)) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}", $path));
+                  $oCss = $oParser->parse();
+                  $css_tmp = $css_array;
+                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                      foreach($oRuleSet->getRules() as $Rule) {
+                          if(!$Rule->setValue($set_value)) {
+                              $flag = true;
+                          }
+                      }
+                      if($flag) {
+                          $set_value = next($css_array);
+                          $flag = false;
+                      }
+                  }
+                  $cache->put("css${count}", $oCss->render(), $path);
+                  $css_url[] = $cache->get("css${count}", $path);
+              } else if ($cache->get("import${count}", $path)) {
+                  $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}", $path));
+                  $oCss = $oParser->parse();
+                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
+                      foreach($oRuleSet->getRules() as $Rule) {
+                          if(!$Rule->setValue($set_value)) {
+                              $flag = true;
+                          }
+                      }
+                      if($flag) {
+                          $set_value = next($css_array);
+                          $flag = false;
+                      }
+                  }
+                  $cache->put("import${count}", $oCss->render(), $path);
+                  $css_url[] = $cache->get("import${count}", $path);
+              }
+          } else {
+              if($cache->get("css${count}", $path)) {
+                  $css_url[] = $cache->get("css${count}", $path);
+              } else if ($cache->get("import${count}", $path)) {
+                  $css_url[] = $cache->get("import${count}", $path);
+              } else if($cache->get_import("css${count}", $path)) {
+                  $css_url[] = $cache->get_import("css${count}", $path);
+            }
+          }
+      }
+      ?>
       <div class="pure-u-1-1">
         <h2>CSS変更フォーム</h2>
             <?php
@@ -422,46 +478,14 @@ function deleteBom($str)
             $css_url = array();
         }
         for($count = 1; $count < $iterator->count(); $count++) {
-          if(!empty($_POST["css${count}"])) {
-              $css_array = array();
-              foreach($_POST["css${count}"] as $key => $value) {
-                  $css_array[] = $value;
-              }
-              $set_value = $css_array[0];
-              if($cache->get("css${count}", $path)) {
-                  $oParser = new Sabberworm\CSS\Parser($cache->get("css${count}", $path));
-                  $oCss = $oParser->parse();
-                  $css_tmp = $css_array;
-                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                      foreach($oRuleSet->getRules() as $Rule) {
-                          $Rule->setValue($set_value);
-                      }
-                      $set_value = next($css_array);
-                  }
-                  $cache->put("css${count}", $oCss->render(), $path);
-                  $css_url[] = $cache->get("css${count}", $path);
-              } else if ($cache->get("import${count}", $path)) {
-                  $oParser = new Sabberworm\CSS\Parser($cache->get("import${count}", $path));
-                  $oCss = $oParser->parse();
-                  foreach($oCss->getAllRuleSets() as $oRuleSet) {
-                      foreach($oRuleSet->getRules() as $Rule) {
-                          $Rule->setValue($set_value);
-                      }
-                      $set_value = next($css_array);
-                  }
-                  $cache->put("import${count}", $oCss->render(), $path);
-                  $css_url[] = $cache->get("import${count}", $path);
-              }
-          } else {
-              if($cache->get("css${count}", $path)) {
-                  $css_url[] = $cache->get("css${count}", $path);
-              } else if ($cache->get("import${count}", $path)) {
-                  $css_url[] = $cache->get("import${count}", $path);
-              } else if($cache->get_import("css${count}", $path)) {
-                  $css_url[] = $cache->get_import("css${count}", $path);
+            if($cache->get("css${count}", $path)) {
+                $css_url[] = $cache->get("css${count}", $path);
+            } else if ($cache->get("import${count}", $path)) {
+                $css_url[] = $cache->get("import${count}", $path);
+            } else if($cache->get_import("css${count}", $path)) {
+                $css_url[] = $cache->get_import("css${count}", $path);
             }
-          }
-      }
+        }
       ?>
       <?php if (!empty($css_url)) {
           $count = 1;
