@@ -1,0 +1,10 @@
+<Files ~ "^\.(htaccess|htpasswd)$">
+deny from all
+</Files>
+AuthUserFile /var/www/html/.htpasswd
+AuthName "Please enter your ID and password"
+AuthType Basic
+order deny,allow
+<Files register.php>
+require valid-user
+</Files>

@@ -208,7 +208,8 @@ function deleteBom($str)
 
   $cache = new Cache();
   if (!empty($_GET["url"])) {
-      $path = $_GET["url"];
+      $schema = array('http://','https://');
+      $path = str_replace($schema, '', $_GET["url"]);
   }
   $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   $css_url = array();
@@ -236,7 +237,7 @@ function deleteBom($str)
               }
           }
       }
-      $url = "http://" . $_GET["url"];
+      $url = "http://" . $path;
       // HTMLソース取得
       $html = file_get_html($url, false, null, -1, -1, true, true, DEFAULT_TARGET_CHARSET, false);
       // CSSのソースを取得し、外部で取ってくるように置き換える
@@ -364,7 +365,6 @@ function deleteBom($str)
             <fieldset>
               <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
-              <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
           </form>
       </div>
@@ -512,7 +512,6 @@ function deleteBom($str)
             <fieldset>
               <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
-              <a class="pure-button pure-button-secondary" href="register.php">CSSの命令文を登録する</a>
             </fieldset>
           </form>
       </div>
