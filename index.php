@@ -210,8 +210,8 @@ function deleteBom($str)
   if (!empty($_GET["url"])) {
       $schema = array('http://','https://');
       $path = str_replace($schema, '', $_GET["url"]);
+      $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   }
-  $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   $css_url = array();
   if(!empty($html)) {
       $iterator = new GlobIterator(dirname(__FILE__) . '/' . $path . '/*');
@@ -236,7 +236,7 @@ function deleteBom($str)
                   }
               }
           }
-      }
+      
       $url = "http://" . $path;
       // HTMLソース取得
       $html = file_get_html($url, false, null, -1, -1, true, true, DEFAULT_TARGET_CHARSET, false);
@@ -337,6 +337,7 @@ function deleteBom($str)
         // 最終的なHTMLデータを取得 //
         $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
         }
+      }
     }
 ?>
 <?php if (!empty($html)) {
@@ -367,6 +368,32 @@ function deleteBom($str)
               <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
             </fieldset>
           </form>
+      </div>
+      <div class="pure-g">
+      <?php if(empty($_GET["url"])) {
+          $path = dirname(__FILE__);
+          $dir = new DirectoryIterator($path);
+          $count = 0;
+          foreach ($dir as $file) {
+              if($count == 9) break;
+              $file = mb_convert_encoding($file, "UTF-8", "auto");
+              if (!$dir->isDot()){
+                  if($dir->isDir()) {
+                      $dirPerms = substr(sprintf('%o', fileperms($dir)), -4);
+                      if($dirPerms == "0777") {
+                          echo "<div class='pure-u-1-3'>";
+                          echo "<div class='pricing-table'>";
+                          echo "<h3><a hreßf='index.php?url=${dir}'>$dir</a></h3>";
+                          echo "<img src='http://capture.heartrails.com/300x250?${dir}' alt='${dir}' />";
+                          echo "</div>";
+                          echo "</div>";
+                          $count++;
+                      }
+                  }
+              }
+          }
+      }
+      ?>
       </div>
       <?php if(!empty($css_url)) {
         if(!empty($css_array)) {
@@ -477,13 +504,15 @@ function deleteBom($str)
         if(!empty($css_array)) {
             $css_url = array();
         }
-        for($count = 1; $count < $iterator->count(); $count++) {
-            if($cache->get("css${count}", $path)) {
-                $css_url[] = $cache->get("css${count}", $path);
-            } else if ($cache->get("import${count}", $path)) {
-                $css_url[] = $cache->get("import${count}", $path);
-            } else if($cache->get_import("css${count}", $path)) {
-                $css_url[] = $cache->get_import("css${count}", $path);
+        if (!empty($_GET["url"])) {
+            for($count = 1; $count < $iterator->count(); $count++) {
+                if($cache->get("css${count}", $path)) {
+                    $css_url[] = $cache->get("css${count}", $path);
+                } else if ($cache->get("import${count}", $path)) {
+                    $css_url[] = $cache->get("import${count}", $path);
+                } else if($cache->get_import("css${count}", $path)) {
+                    $css_url[] = $cache->get_import("css${count}", $path);
+                }
             }
         }
       ?>
