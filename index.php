@@ -383,7 +383,7 @@ function deleteBom($str)
                       if($dirPerms == "0777") {
                           echo "<div class='pure-u-1-3'>";
                           echo "<div class='pricing-table'>";
-                          echo "<h3><a hreßf='index.php?url=${dir}'>$dir</a></h3>";
+                          echo "<h3><a href='index.php?url=${dir}'>$dir</a></h3>";
                           echo "<img src='http://capture.heartrails.com/300x250?${dir}' alt='${dir}' />";
                           echo "</div>";
                           echo "</div>";
