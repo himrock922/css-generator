@@ -264,7 +264,9 @@ function deleteBom($str)
               $import_url[] = css_import_get($url, $import);
           }
       }
-      $css_url = array_merge($from_url, $import_url);
+      if(isset($import_url)) {
+          $css_url = array_merge($from_url, $import_url);
+      }
       $html = strtr($html, $css_replace);
       $html = strtr($html, $img_replace);
       if($input_replace != false) {
@@ -303,11 +305,13 @@ function deleteBom($str)
             $import_css_to[] = $css;
             $count++;
         }
+        if(isset($import_url)) {
         foreach($import_url as $css) {
             $css = deleteBom($css);
             $cache->put("import${count}", $css, $path);
-            $i_url[] = $cache->getCacheImportFilePath("import${count}");
+            $i_url[] = $cache->getCacheImportFilePath("import${count}", $path);
             $count++;
+        }
         }
         $i_css = str_replace($i_matchs, $i_url, $i_css);
         $i_css = deleteBom($i_css);
@@ -365,7 +369,7 @@ function deleteBom($str)
           <form method="get" class="pure-form">
             <fieldset>
               <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
-              <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+              <p><label><input type="hidden" name="save" value="サイト情報を保存する"></label></p>
             </fieldset>
           </form>
       </div>
@@ -540,7 +544,7 @@ function deleteBom($str)
           <form method="get" class="pure-form">
             <fieldset>
               <p><label>URL：<input type="text" name="url" size="40"></label> <button type="submit" class="pure-button pure-button-primary">送信</button></p>
-              <p><label>サイト情報を保存する <input type="checkbox" name="save" value="サイト情報を保存する"></label></p>
+              <p><label><input type="hidden" name="save" value="サイト情報を保存する"></label></p>
             </fieldset>
           </form>
       </div>
