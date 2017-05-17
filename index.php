@@ -210,6 +210,20 @@ function deleteBom($str)
   if (!empty($_GET["url"])) {
       $schema = array('http://','https://');
       $path = str_replace($schema, '', $_GET["url"]);
+
+      $headers = get_headers('http://' . $path);
+      foreach($headers as $header) {
+          if(preg_match('@^Location: @',$header)) {
+              echo "<div class='pure-g'>";
+              echo "<div class='pure-u-1-1 pure-text'>";
+              echo "<h1>リダイレクトがかかっているURLです。直接アクセスできるURLを入力して下さい。</h1>";
+              echo "<h2>三秒後に検索フォームに戻ります。</h2>";
+              echo "<META http-equiv='refresh' content='3 url=http://css-generator.jabug.jp'>";
+              echo "</div>";
+              echo "</div>";
+              exit;
+          }
+      }
       $html = str_get_html($cache->get('html', $path), true, true, DEFAULT_TARGET_CHARSET, false, false, false);
   }
   $css_url = array();
