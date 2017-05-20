@@ -211,7 +211,18 @@ function deleteBom($str)
       $schema = array('http://','https://');
       $path = str_replace($schema, '', $_GET["url"]);
 
-      $headers = get_headers('http://' . $path);
+      $headers = @get_headers('http://' . $path);
+      $response = @file_get_contents('http://' . $path, NULL, NULL, 0, 1);
+      if ($response == false) {
+          echo "<div class='pure-g'>";
+          echo "<div class='pure-u-1-1 pure-text'>";
+          echo "<h1>存在しないURLです。存在するURLを入力して下さい。</h1>";
+          echo "<h2>三秒後に検索フォームに戻ります。</h2>";
+          echo "<META http-equiv='refresh' content='3 url=http://css-generator.jabug.jp'>";
+          echo "</div>";
+          echo "</div>";
+          exit;
+      }
       foreach($headers as $header) {
           if(preg_match('@^Location: @',$header)) {
               echo "<div class='pure-g'>";
